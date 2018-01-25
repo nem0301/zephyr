@@ -85,12 +85,18 @@ int Counting()
 void Print1(void)
 {
 	k_sched_time_slice_set(10, 5);
-	k_busy_wait(5000000);
 	while (1)
 	{
 		printk("test1 %d\n", Counting());
 		//k_sleep(10000);
-		k_sleep(150000);
+		s64_t timeStamp;
+		s64_t msSpent;
+		
+		timeStamp = k_uptime_get();
+		k_sleep(5000);
+
+		msSpent = k_uptime_delta(&timeStamp);
+		printk("spent : %lld\n", msSpent);
 	}
 }
 
@@ -103,8 +109,19 @@ void WakeUp(void)
 		k_work_submit_to_queue(&kMyWorkQueue, &wiMyDevice.work);
 		k_work_submit_to_queue(&kMyWorkQueue, &wiMyDevice2.work);
 
+		u32_t startTime;
+		u32_t stopTime;
+		u32_t cycleSpent;
+		u32_t nsSpent;
+
+		startTime = k_cycle_get_32();
 		k_busy_wait(5000000);
 		k_sleep(3001);
+		stopTime = k_cycle_get_32();
+
+		cycleSpent = stopTime - startTime;
+		nsSpent = SYS_CLOCK_HW_CYCLES_TO_NS(cycleSpent);
+		printk("cycle : %u, ns : %u\n", cycleSpent, nsSpent);
 	}
 }
 
