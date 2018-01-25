@@ -102,6 +102,7 @@ void WakeUp(void)
 		printk("wake up %d\n", Counting());
 		k_work_submit_to_queue(&kMyWorkQueue, &wiMyDevice.work);
 		k_work_submit_to_queue(&kMyWorkQueue, &wiMyDevice2.work);
+
 		k_busy_wait(5000000);
 		k_sleep(3001);
 	}
