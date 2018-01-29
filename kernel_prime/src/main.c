@@ -31,8 +31,14 @@ struct device_info
 
 struct device_info wiMyDevice2;
 
+// kernel timer
+void ExpireFunction(struct k_timer*);
+K_TIMER_DEFINE(kMyTimer, ExpireFunction, NULL);
+
 int main()
 {
+	k_timer_start(&kMyTimer, K_SECONDS(5), K_SECONDS(2));
+
 	k_work_q_start(&kMyWorkQueue, kMyStackArea,
 			K_THREAD_STACK_SIZEOF(kMyStackArea), PRIORITY + 1);
 
@@ -125,3 +131,7 @@ void WakeUp(void)
 	}
 }
 
+void ExpireFunction(struct k_timer* timer)
+{
+	printk("expire\n");
+}
