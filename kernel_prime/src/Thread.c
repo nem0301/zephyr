@@ -1,11 +1,12 @@
-
 #include "Common.h"
 #include "Thread.h"
 
+#ifdef THREAD
 K_THREAD_DEFINE(kPrintID, STACKSIZE, Print1, NULL, NULL, NULL,
 		PRIORITY , 0, K_NO_WAIT);
 K_THREAD_DEFINE(kWakeUpID, STACKSIZE, WakeUp, NULL, NULL, NULL,
 		PRIORITY, 0, K_NO_WAIT);
+#endif
 
 int Counting()
 {

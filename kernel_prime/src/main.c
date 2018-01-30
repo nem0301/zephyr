@@ -1,7 +1,5 @@
 #include "Common.h"
 
-// thread
-#include "Thread.h"
 // work queue
 #include "WorkQueue.h"
 // kernel timer

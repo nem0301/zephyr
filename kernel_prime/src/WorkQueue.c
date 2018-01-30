@@ -6,8 +6,10 @@ struct k_work_q kMyWorkQueue;
 struct device_info wiMyDevice;
 struct device_info wiMyDevice2;
 
+#ifdef WORK_QUEUE
 K_THREAD_DEFINE(kWorkQueueID, STACKSIZE, WorkQueueThread, NULL, NULL, NULL,
 		PRIORITY, 0, K_NO_WAIT);
+#endif
 
 void InitWorkQueue()
 {

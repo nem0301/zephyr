@@ -2,14 +2,20 @@
 #include "Timer.h"
 
 K_TIMER_DEFINE(kMyTimer, ExpireFunction, NULL);
+
+
+#ifdef CLOCK
 K_THREAD_DEFINE(kKernelClockID, STACKSIZE, KernelClockThread, NULL, NULL, NULL,
 		PRIORITY, 0, K_NO_WAIT);
 K_THREAD_DEFINE(kHWClockID, STACKSIZE, HWClockThread, NULL, NULL, NULL,
 		PRIORITY, 0, K_NO_WAIT);
+#endif
 
 void InitTimer()
 {
+#ifdef TIMER
 	k_timer_start(&kMyTimer, K_SECONDS(2), K_SECONDS(10));
+#endif
 }
 
 void ExpireFunction(struct k_timer* timer)
