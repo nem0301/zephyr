@@ -3,5 +3,5 @@
 #include <kernel.h>
 #include <string.h>
 
-#define STACKSIZE	1024
+#define STACKSIZE	8092
 #define PRIORITY	7
