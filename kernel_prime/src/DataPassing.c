@@ -57,10 +57,12 @@ K_THREAD_DEFINE(kMailBox3ID, STACKSIZE, MailBox3Thread, NULL, NULL, NULL,
 		PRIORITY, 0, K_NO_WAIT);
 #endif
 
+#ifdef DATA_PIPE
 K_THREAD_DEFINE(kPipe1ID, STACKSIZE, Pipe1Thread, NULL, NULL, NULL,
 		PRIORITY, 0, K_NO_WAIT);
 K_THREAD_DEFINE(kPipe2ID, STACKSIZE, Pipe2Thread, NULL, NULL, NULL,
 		PRIORITY, 0, K_NO_WAIT);
+#endif
 
 
 void Fifo1Thread()
@@ -376,7 +378,7 @@ void Pipe2Thread()
 		}
 		else if (n < 128)
 		{
-			printk("th2 %ld/%ld\n", n, 128);
+			printk("th2 %ld/128\n", n);
 		}
 		else
 		{
