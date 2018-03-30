@@ -1,0 +1,41 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "isShellCommand": true,
+    "showOutput": "always",
+    "tasks": [
+        {
+            "taskName": "app",
+            "suppressTaskName": true,
+            "isBuildCommand": true,
+            "type": "shell",
+            "command": "cd app/build; cmake -GNinja -DBOARD=arduino_101 ..; ninja",
+            "problemMatcher": []
+        },
+        {
+            "taskName": "arc",
+            "suppressTaskName": true,
+            "isBuildCommand": true,
+            "type": "shell",
+            "command": "cd arc/build; cmake -GNinja -DBOARD=arduino_101_sss ..; ninja",
+            "problemMatcher": []
+        },
+        {
+            "taskName": "flash app",
+            "suppressTaskName": true,
+            "isBuildCommand": true,
+            "type": "shell",
+            "command": "cp app/build/zephyr/zephyr.bin C:/Users/nem/Desktop/dfu-util-0.9-win64/zephyr.bin; cd C:/Users/nem/Desktop/dfu-util-0.9-win64; ./dfu-util -a x86_app -D zephyr.bin",
+            "problemMatcher": []
+        },
+        {
+            "taskName": "flash arc",
+            "suppressTaskName": true,
+            "isBuildCommand": true,
+            "type": "shell",
+            "command": "cp arc/build/zephyr/zephyr.bin C:/Users/nem/Desktop/dfu-util-0.9-win64/zephyr_arc.bin; cd C:/Users/nem/Desktop/dfu-util-0.9-win64; ./dfu-util -a sensor_core -D zephyr_arc.bin",
+            "problemMatcher": []
+        }
+    ]
+}
