@@ -21,6 +21,16 @@
 #define STACKSIZE	8092
 #define PRIORITY	1
 
+#define DEVICE_NAME 		"Infomation"
+#define DEVICE_NAME_LEN 	(sizeof(DEVICE_NAME) - 1)
+#define TEMPERATURE_CUD		"Temperature"
+#define HUMIDITY_CUD		"Humidity"
+#define BATTERY_CUD			"Battery"
+
+static s16_t gTempValue;
+static u16_t gHumidityValue;
+static u16_t gBatteryValue;
+
 void DHT11Report(void);
 void OLEDProc(void);
 void IPMProc(void);
@@ -33,8 +43,6 @@ K_THREAD_DEFINE(kOLED_ID, STACKSIZE, OLEDProc, NULL, NULL, NULL,
 
 K_THREAD_DEFINE(kIPM_ID, STACKSIZE, IPMProc, NULL, NULL, NULL,
 		PRIORITY , 0, K_NO_WAIT);
-
-K_MUTEX_DEFINE(kFIFO_MUTEX);
 
 struct DHT11Data
 {
@@ -104,10 +112,11 @@ void DHT11Report(void)
 			for (int i = 0; i < 8; i++)
 			{
 				u32_t val;
+				u16_t cnt = 0;
 				do
 				{
 					gpio_pin_read(gpio_dev, 19, &val);
-				} while (val == 0);
+				} while (val == 0 && cnt++ < 300);
 				k_busy_wait(30);
 				// read data
 				gpio_pin_read(gpio_dev, 19, &val);
@@ -117,10 +126,11 @@ void DHT11Report(void)
 					result[b] |= (1 << (7 - i));
 				}
 
+				cnt = 0;
 				do
 				{
 					gpio_pin_read(gpio_dev, 19, &val);
-				} while (val == 1);
+				} while (val == 1 && cnt++ < 300);
 			}
 		}
 		
@@ -137,9 +147,9 @@ void DHT11Report(void)
 			static struct DHT11Data dht11;
 			dht11.temp = result[2];
 			dht11.humi = result[0];
-			k_mutex_lock(&kFIFO_MUTEX, K_FOREVER);
+			gTempValue = dht11.temp;
+			gHumidityValue = dht11.humi;
 			k_fifo_put(&kDHT11_FIFO, &dht11);
-			k_mutex_unlock(&kFIFO_MUTEX);
 		}
 		else
 		{
@@ -173,14 +183,19 @@ void OLEDProc(void)
 	static char buf[17];
 	while(1)
 	{
-		struct DHT11Data* data = k_fifo_get(&kDHT11_FIFO, K_NO_WAIT);
+		struct DHT11Data* data = NULL;
+		data = k_fifo_get(&kDHT11_FIFO, K_NO_WAIT);
 		if (data != NULL)
 		{
 			sprintf(buf, "%d C %d %%", data->temp, data->humi);
 			DrawString(0, 0, 0, 127, 0, buf);
 		}
-		
-		struct StringData* strData = k_fifo_get(&kTEXT_FIFO, K_NO_WAIT);
+		else
+		{
+			printk("dht11 is null\n");
+		}
+		struct StringData* strData = NULL;
+		strData = k_fifo_get(&kTEXT_FIFO, K_NO_WAIT);
 		if (strData != NULL)
 		{
 			for (int i = 0; i < 10; i++)
@@ -189,7 +204,11 @@ void OLEDProc(void)
 				DrawString(0, (i + 1) * 11, 0, 127, 0, buf);
 			}
 		}
-		k_sleep(100);
+		else
+		{
+			printk("bat is null\n");
+		}
+		k_sleep(1000);
 	}
 }
 
@@ -199,11 +218,10 @@ static void sensor_ipm_callback(void* context, u32_t id, volatile void* data)
 {
 	volatile u32_t val = *(u32_t*)data;
 
+	gBatteryValue = val;
 	static struct StringData strData;
 	sprintf(strData.str[0], "%3d%%", val);
-	k_mutex_lock(&kFIFO_MUTEX, K_FOREVER);
 	k_fifo_put(&kTEXT_FIFO, &strData);
-	k_mutex_unlock(&kFIFO_MUTEX);
 }
 
 void IPMProc(void)
@@ -219,16 +237,6 @@ void IPMProc(void)
 void BluetoothProc(void);
 K_THREAD_DEFINE(kBLUETOOTH_ID, STACKSIZE, BluetoothProc, NULL, NULL, NULL,
 		PRIORITY , 0, K_NO_WAIT);
-
-#define DEVICE_NAME 		"Infomation"
-#define DEVICE_NAME_LEN 	(sizeof(DEVICE_NAME) - 1)
-#define TEMPERATURE_CUD		"Temperature"
-#define HUMIDITY_CUD		"Humidity"
-#define BATTERY_CUD			"Battery"
-
-static s16_t gTempValue;
-static u16_t gHumidityValue;
-static u16_t gBatteryValue;
 
 static ssize_t ReadU16(struct bt_conn* conn, const struct bt_gatt_attr* attr,
 	void* buf, u16_t len, u16_t offset)
