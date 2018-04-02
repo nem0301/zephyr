@@ -15,25 +15,6 @@
 #define PRIORITY	7
 #define ADC_DEV_NAME	"ADC_0"
 
-int Counting()
-{
-
-	u32_t count = 0;
-
-	if (k_is_in_isr())
-	{
-	}
-	else
-	{
-		count = (u32_t)k_thread_custom_data_get();
-		count++;
-		k_thread_custom_data_set((void*)count);
-	}
-
-	return count;
-}
-
-QUARK_SE_IPM_DEFINE(ess_ipm, 0, QUARK_SE_IPM_OUTBOUND);
 static u32_t seq_buffer[2][10];
 
 static struct adc_seq_entry sample = {
@@ -55,6 +36,8 @@ static struct adc_seq_table table = {
 // 		printk("0x%02u ", *buf / (0xfff0fff /100));
 // 	printk("\n");
 // }
+
+QUARK_SE_IPM_DEFINE(ess_ipm, 0, QUARK_SE_IPM_OUTBOUND);
 
 static void PrintPercentOfBattery(const u32_t* buf, u32_t length)
 {
@@ -88,7 +71,40 @@ static void PrintPercentOfBattery(const u32_t* buf, u32_t length)
 		cnt += 2;
 	}
 	// printk("\n");
-	printk("%08u : %u\%\n", count++, sum / cnt);
+	printk("%08u : %u%%\n", count++, sum / cnt);
+}
+
+static u32_t GetPercentOfBattery(const u32_t* buf, u32_t length)
+{
+	const u32_t *top;
+	u32_t cnt = 0;
+	u32_t sum = 0;;
+	u32_t delta = 3256;
+	for (top = buf + length; buf < top; buf++)
+	{
+		// printk("%08x ", *buf);
+		u32_t val1 = *buf >> 16;
+		u32_t val2 = *buf & 0xfff;
+		if (val1 < delta)
+		{
+			val1 = 0;
+		}
+		else
+		{
+			val1 = ((val1 - delta) * 100) / 838;
+		}
+		if (val2 < delta)
+		{
+			val2 = 0;
+		}
+		else
+		{
+			val2 = ((val2 - delta) * 100) / 838;
+		}
+		sum += val1 + val2;
+		cnt += 2;
+	}
+	return sum / cnt;
 }
 
 static long _abs(long x)
@@ -99,18 +115,18 @@ static long _abs(long x)
 void main(void)
 {
 	struct device* adc_dev = device_get_binding(ADC_DEV_NAME);
-	// struct deviec* ipm;
+	struct device* ipm;
 
 	int result;
 	unsigned int loops = 10;
 	unsigned int bufi0 = ~0, bufi;
 
-	// ipm = device_get_binding("ess_ipm");
-	// if (ipm == NULL)
-	// {
-	// 	printk("Failed to get ESS IPM device\n");
-	// 	return;
-	// }
+	ipm = device_get_binding("ess_ipm");
+	if (ipm == NULL)
+	{
+		printk("Failed to get ESS IPM device\n");
+		return;
+	}
 
 	printk("arc\n");
 	if (!adc_dev) {
@@ -129,6 +145,7 @@ void main(void)
 
 	gpio_pin_configure(gpio_dev, 4, (GPIO_DIR_OUT));
 	gpio_pin_write(gpio_dev, 4, 1);
+	static u32_t bat;
 	while (1)
 	{
 		adc_enable(adc_dev);
@@ -139,6 +156,8 @@ void main(void)
 		// printk("loop %u: buffer %u, result = %d\n", loops, bufi, result);
 		// _print_sample_in_hex(seq_buffer[bufi], 10);
 		PrintPercentOfBattery(seq_buffer[bufi], 10);
+		bat = GetPercentOfBattery(seq_buffer[bufi], 10);
+		ipm_send(ipm, 1, 0, &bat, sizeof(bat));
 		if (bufi0 != ~0)
 		{
 			unsigned int cnt;
@@ -155,3 +174,6 @@ void main(void)
 		adc_disable(adc_dev);
 	}
 }
+
+
+
