@@ -183,8 +183,7 @@ void OLEDProc(void)
 	static char buf[17];
 	while(1)
 	{
-		struct DHT11Data* data = NULL;
-		data = k_fifo_get(&kDHT11_FIFO, K_NO_WAIT);
+		struct DHT11Data* data = k_fifo_get(&kDHT11_FIFO, K_NO_WAIT);
 		if (data != NULL)
 		{
 			sprintf(buf, "%d C %d %%", data->temp, data->humi);
@@ -194,8 +193,7 @@ void OLEDProc(void)
 		{
 			printk("dht11 is null\n");
 		}
-		struct StringData* strData = NULL;
-		strData = k_fifo_get(&kTEXT_FIFO, K_NO_WAIT);
+		struct StringData* strData = k_fifo_get(&kTEXT_FIFO, K_NO_WAIT);
 		if (strData != NULL)
 		{
 			for (int i = 0; i < 10; i++)
@@ -242,17 +240,14 @@ static ssize_t ReadU16(struct bt_conn* conn, const struct bt_gatt_attr* attr,
 	void* buf, u16_t len, u16_t offset)
 {
 	const u16_t* u16 = attr->user_data;
-	u16_t value = sys_cpu_to_le16(*u16);
+	u16_t value = sys_cpu_to_be16(*u16);
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, &value, sizeof(value));
 }
 
-// static ssize_t ReadU32(struct bt_conn* conn, const struct bt_gatt_attr* attr,
-// 	void* buf, u16_t len, u16_t offset)
-// {
-// 	const u32_t* u32 = attr->user_data;
-// 	u32_t value = sys_cpu_to_le32(*u32);
-// 	return bt_gatt_attr_read(conn, attr, buf, len, offset, &value, sizeof(value));
-// }
+static struct bt_uuid_128 gBatteryUUID = BT_UUID_INIT_128(
+	0xf0, 0xde, 0xbc, 0x9a, 0x78, 0x56, 0x34, 0x12,
+	0x78, 0x56, 0x34, 0x12, 0x78, 0x56, 0x34, 0x12
+);
 
 static struct bt_gatt_attr gAttrs[] = 
 {
@@ -268,10 +263,10 @@ static struct bt_gatt_attr gAttrs[] =
 		ReadU16, NULL, &gHumidityValue),
 	BT_GATT_CUD(HUMIDITY_CUD, BT_GATT_PERM_READ),
 
-	// BT_GATT_CHARACTERISTIC(BT_UUID_BATTERY, BT_GATT_CHRC_READ),
-	// BT_GATT_DESCRIPTOR(BT_UUID_BATTERY, BT_GATT_PERM_READ, 
-	// 	ReadU16, NULL, &gBatteryValue),
-	// BT_GATT_CUD(BATTERY_CUD, BT_GATT_PERM_READ),
+	BT_GATT_CHARACTERISTIC(&gBatteryUUID.uuid, BT_GATT_CHRC_READ),
+	BT_GATT_DESCRIPTOR(&gBatteryUUID.uuid, BT_GATT_PERM_READ, 
+	ReadU16, NULL, &gBatteryValue),
+	BT_GATT_CUD(BATTERY_CUD, BT_GATT_PERM_READ),
 };
 
 static struct bt_gatt_service gEnvSvc = BT_GATT_SERVICE(gAttrs);
